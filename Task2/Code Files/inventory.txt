@@ -1,0 +1,8 @@
+[jenkins]
+172.31.89.9 ansible_user=ubuntu
+
+[app]
+172.31.94.106 ansible_user=ubuntu
+
+[all:vars]
+ansible_ssh_private_key_file=/home/ubuntu/aws_project/ansible/awsprojectkey.pem

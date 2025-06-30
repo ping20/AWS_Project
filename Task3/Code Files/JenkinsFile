@@ -1,0 +1,40 @@
+pipeline {
+  agent any
+
+  environment {
+    REPO_NAME = 'node-app-repo'
+    IMAGE_TAG = "${BUILD_NUMBER}"
+    AWS_REGION = 'us-east-1'
+    ECR_URI = "<your_aws_account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+  }
+
+  stages {
+    stage('Checkout Code') {
+      steps {
+        git branch: 'master', url: 'git@github.com:<your-username>/node-docker-app.git'
+      }
+    }
+
+    stage('Build & Push Docker Image') {
+      steps {
+        sh '''
+        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_URI
+        docker build -t $ECR_URI:$IMAGE_TAG .
+        docker push $ECR_URI:$IMAGE_TAG
+        '''
+      }
+    }
+
+    stage('Deploy to App Host') {
+      steps {
+        sh '''
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/jenkins-to-app ubuntu@<APP-PRIVATE-IP> << EOF
+          docker ps -q --filter ancestor=$ECR_URI:$IMAGE_TAG | grep . && docker stop \$(docker ps -q --filter ancestor=$ECR_URI:$IMAGE_TAG)
+          docker pull $ECR_URI:$IMAGE_TAG
+          docker run -d -p 3000:3000 $ECR_URI:$IMAGE_TAG
+        EOF
+        '''
+      }
+    }
+  }
+}

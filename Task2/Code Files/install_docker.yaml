@@ -1,0 +1,16 @@
+---
+- name: Install Docker on Jenkins and App hosts
+  hosts: jenkins,app
+  become: true
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: true
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: true
